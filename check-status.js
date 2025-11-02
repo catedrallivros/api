@@ -1,37 +1,21 @@
-// api/check-status.js
-// Consulta o status da cobrança na LivePix por txid.
-// Retorna { paid: boolean, status: string, raw: {...} }
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Método não permitido" });
+  }
 
-module.exports = async (req, res) => {
+  const { chargeID } = req.body;
+
   try {
-    const txid = req.query.txid || (req.body && req.body.txid);
-    if (!txid) return res.status(400).json({ error: 'txid obrigatorio' });
-
-    const LIVEPIX_TOKEN = process.env.LIVEPIX_TOKEN;
-    if (!LIVEPIX_TOKEN) return res.status(500).json({ error: 'LIVEPIX_TOKEN não configurado' });
-
-    // Endpoint de consulta (ajuste conforme a doc LivePix)
-    const apiUrl = `https://api.livepix.gg/v1/charges/${encodeURIComponent(txid)}`;
-
-    const r = await fetch(apiUrl, {
-      method: 'GET',
-      headers: { 'Authorization': `Bearer ${LIVEPIX_TOKEN}` }
+    const response = await fetch(`https://api.livepix.gg/v1/charge/${chargeID}`, {
+      headers: {
+        "Authorization": `Bearer ${process.env.LIVEPIX_TOKEN}`,
+      },
     });
 
-    if (!r.ok) {
-      const text = await r.text();
-      return res.status(502).json({ error: 'Erro LivePix', details: text });
-    }
-
-    const data = await r.json();
-
-    // Interprete status conforme resposta real. Exemplos comuns: 'paid','confirmed','pending','expired'
-    const status = (data.status || '').toString().toLowerCase();
-    const paid = status === 'paid' || status === 'confirmed' || data.paid === true;
-
-    return res.status(200).json({ paid, status, raw: data });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'Erro interno', details: err.message });
+    const data = await response.json();
+    const pago = data.status === "COMPLETED";
+    res.status(200).json({ pago });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao verificar status do Pix" });
   }
-};
+}
