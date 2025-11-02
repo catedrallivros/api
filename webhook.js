@@ -1,23 +1,11 @@
-// api/webhook.js
-// Endpoint para receber notificações (webhooks) da LivePix.
-// Configure na dashboard da LivePix apontando para:
-// https://<seu-projeto>.vercel.app/api/webhook
-
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   try {
-    if (req.method !== 'POST') return res.status(405).send('Method not allowed');
+    const evento = req.body;
+    console.log("📬 Webhook recebido:", evento);
 
-    const payload = req.body;
-    console.log('Webhook recebido:', JSON.stringify(payload));
-
-    // Opcional: validar assinatura se a LivePix fornecer header de assinatura.
-    // Ex: const sig = req.headers['x-livepix-signature'];
-
-    // Aqui você poderia persistir em DB ou processar eventos específicos.
-    // Neste exemplo, apenas respondemos 200 OK.
-    return res.status(200).json({ ok: true });
-  } catch (err) {
-    console.error('Erro webhook:', err);
-    return res.status(500).json({ error: 'Erro interno' });
+    // Aqui você pode atualizar seu banco de dados, enviar e-mail, etc.
+    res.status(200).json({ ok: true });
+  } catch (error) {
+    res.status(400).json({ error: "Erro ao processar webhook" });
   }
-};
+}
